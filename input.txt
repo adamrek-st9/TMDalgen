@@ -1,4 +1,4 @@
-n_generations = 9               # Number of generations
+n_generations = 10              # Number of generations
 #pop_filename = pop0.traj        # Name of the file with the initial population
 pop_size = 10                   # Population size
 n_best = 1                      # Number of best individuals from the previous generation that will go to the new generation

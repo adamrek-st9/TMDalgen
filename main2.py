@@ -27,7 +27,7 @@ calc = get_calc(label)
 gen_random_pop(pop_size, struct_filename, size, n_atoms, atom_symbol, calc, mag_moment, label, 'pop0')
 
 #przygotowanie kolejnych pokolen
-for i in range(n_generations):
+for i in range(n_generations-1):
     prep_generation(f'sorted_pop{i}.traj', pop_size, n_best, n_child, n_mut,
                     struct_filename, size, n_atoms, n_change, atom_symbol,
                     calc, mag_moment, label, f'pop{i+1}')
