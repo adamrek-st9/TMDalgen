@@ -1,0 +1,13 @@
+n_generations = 9               # Number of generations
+#pop_filename = pop0.traj        # Name of the file with the initial population
+pop_size = 10                   # Population size
+n_best = 1                      # Number of best individuals from the previous generation that will go to the new generation
+n_child = 2                     # Number of new individuals created through crossover
+n_mut = 2                       # Number of new individuals created through mutation
+struct_filename = MoS2.xyz      # Name of the file with the dichalcogenide structure
+size = 4x4                      # Size of the structures in the population (e.g., 4x4)
+n_atoms = 4                     # Number of atoms between layers
+n_change = 2                    # Number of atoms exchanged between structures during crossover
+atom_symbol = Mo                # Chemical symbol of atoms between the layers
+mag_moment = 6.0                # Initial magnetic moment assigned to atoms between layers
+label = MoS2                    # Label assigned to the calculator files (e.g., MoS2)

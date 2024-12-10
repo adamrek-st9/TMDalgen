@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from ase import io
 from ase.io import Trajectory
+from math import ceil
 from functions.sort_population import sort_population
 from functions.gen_rand_struct import gen_rand_struct
 from functions.mutation import mutation
@@ -13,13 +14,13 @@ from functions.crossover import crossover
 from functions.gen_energy_file import gen_energy_file
 
 
-def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom_symbol,
+def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
+                    struct_filename, size, n_atoms, n_change, atom_symbol,
                     calc, mag_moment, label, new_pop_name):
 
     #wczytanie populacji poczatkowej z pliku .traj
     previous_pop = sort_population(Trajectory(pop_filename, 'r'))
-    pop_size = len(previous_pop)
-    better_part = previous_pop[:5] #lepiej przystosowana czesc populacji
+    better_part = previous_pop[:ceil(pop_size/2)] #lepiej przystosowana czesc populacji
 
     folder_path = Path(f'{new_pop_name}')
     folder_path.mkdir(parents=True, exist_ok=True)
@@ -27,13 +28,14 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
     os.chdir(folder_path)
 
     new_pop = Trajectory(f'{new_pop_name}.traj', 'w')
-    new_pop.write(better_part[0]) #dodanie najlepiej przystosowanego osobnika z poprzedniej populacji
-                                  #bezposrednio do nowego pokolenia
+    for i in range(n_best):
+        new_pop.write(better_part[i]) #dodanie najlepiej przystosowanych osobnikow z poprzedniej populacji
+                                      #bezposrednio do nowego pokolenia
 
     #utworzenie nowych osobnikow w wyniku krzyzowania
     child_counter = 0
     childes = []
-    while len(childes) < 2:
+    while len(childes) < n_child:
         child_counter += 1
         tmp_folder_path = Path(f'child{child_counter}')
         tmp_folder_path.mkdir(parents=True, exist_ok=True)
@@ -50,8 +52,14 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
             relaxed_child.info['pot_energy'] = np.round(pot_energy, 4)
             childes.append(relaxed_child)
             io.write(f'relaxed_child{child_counter}.xyz', relaxed_child)
+            print(f'Successfully relaxed child{child_counter}.')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Successfully relaxed child{child_counter}.\n')
         except Exception as e:
-            print(f'Nie udało sie zrelaksować potomka nr {child_counter}. Kod błędu: {e}')
+            print(f'Failed to relax child{child_counter}. Error: {e}')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Failed to relax child{child_counter}. Error: {e}\n')
+
 
         os.chdir(original_directory / folder_path)
 
@@ -61,7 +69,7 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
     #utworzenie nowych osobnikow w wyniku mutacji
     mut_counter = 0
     mut_structures = []
-    while len(mut_structures) < 2:
+    while len(mut_structures) < n_mut:
         mut_counter += 1
         tmp_folder_path = Path(f'mut{mut_counter}')
         tmp_folder_path.mkdir(parents=True, exist_ok=True)
@@ -77,8 +85,13 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
             relaxed_mut_struct.info['pot_energy'] = np.round(pot_energy, 4)
             mut_structures.append(relaxed_mut_struct)
             io.write(f'relaxed_mut{mut_counter}.xyz', relaxed_mut_struct)
+            print(f'Successfully relaxed mut{mut_counter}.')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Successfully relaxed mut{mut_counter}.\n')
         except Exception as e:
-            print(f'Nie udało sie zrelaksować zmutowanej struktury nr {child_counter}. Kod błędu: {e}')
+            print(f'Failed to relax mut{mut_counter}. Error: {e}')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Failed to relax mut{mut_counter}. Error: {e}\n')
 
         os.chdir(original_directory / folder_path)
 
@@ -103,8 +116,13 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
             relaxed_struct.info['pot_energy'] = np.round(pot_energy, 4)
             io.write(f'relaxed_cand{candidates_counter}.xyz', relaxed_struct)
             new_pop.write(relaxed_struct)
+            print(f'Successfully relaxed cand{candidates_counter}.')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Successfully relaxed cand{candidates_counter}.\n')
         except Exception as e:
-            print(f'Nie udało sie zrelaksować kandydata {candidates_counter}. Kod błędu: {e}')
+            print(f'Failed to relax cand{candidates_counter}. Error: {e}')
+            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+                f.write(f'Failed to relax cand{candidates_counter}. Error: {e}\n')
 
         os.chdir(original_directory / folder_path)
 
@@ -118,4 +136,6 @@ def prep_generation(pop_filename, struct_filename, size, n_atoms, n_change, atom
     for structure in tmp_pop:
         out_pop.write(structure)
 
-    print(f'Zakończono generowanie nowego pokolenia!')
+    print(f'The {new_pop_name} is complete!')
+    with open(f'{folder_path}/log_{new_pop_name}.txt', 'a') as f:
+        f.write(f'The {new_pop_name} is complete!\n')
