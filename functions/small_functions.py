@@ -1,25 +1,52 @@
-#small_functions.py
-#plik z mniejszymi, pobocznymi funkcjami, ktora sa wykorzystane w innych funkcjach i skryptach
+"""
+The module contains a function 'get_r', 'calc_distance', 'second_part', 'get_rand_xyz' i 'get_image_positions' -
+smaller functions used in other modules.
+"""
 
 import numpy as np
 from ase import Atoms
 from ase.data import covalent_radii
 import random
 
-
-#funkcja obliczajaca promien atomu
 def get_r(atomic_number):
+    """
+    Calculate the radius of an atom.
+
+    Args:
+        atomic_number (int): The atomic number.
+
+    Returns:
+        float: The radius of an atom.
+    """
     tmp_r = 0.9 * covalent_radii[atomic_number]
     return tmp_r
 
-#funkcja obliczajaca odleglosc pomiedzy dwoma atomami
 def calc_distance(atom1, atom2):
+    """
+    Calculate the distance between two atoms.
+
+    Args:
+        atom1 (ase.Atom): The first atom.
+        atom2 (ase.Atom): The second atom.
+
+    Returns:
+        float: The distance between atom1 and atom2.
+    """
     tmp_d = np.linalg.norm(atom1.position - atom2.position)
     return tmp_d
 
-#funkcja zwracajaca atomy z obiektu parent, ktorych nie mam w part
-#potrzebna w crossover
 def second_part(parent, part):
+    """
+    Returns atoms from the parent structure that are not in the part object.
+    Function used in the crossover module.
+
+    Args:
+        parent (ase.Atoms): The parent structure.
+        part (ase.Atoms): The part object.
+
+    Returns:
+        ase.Atoms: The structure with atoms from the parent object that are not in the part object.
+    """
     tmp_second_part = Atoms()
     tmp_second_part.set_cell(parent.cell)
     for parent_atom in parent:
@@ -32,9 +59,16 @@ def second_part(parent, part):
             tmp_second_part.append(parent_atom)
     return tmp_second_part
 
-#funkcja zwracajace losowe wartosci x,y,z w odpowiednich
-#przedzialach zaleznych od rozmiarow komorki a,b,c
 def get_rand_xyz(cell):
+    """
+    Returns a random xyz coordinates in appropriate ranges depending on the cell size.
+
+    Args:
+        cell (ase.Cell): The cell object.
+
+    Returns:
+        np.array: The random xyz coordinates.
+    """
     array = cell.cellpar()
     a = array[0]  # wymiar w kierunku osi x
     b = array[1]
@@ -52,13 +86,22 @@ def get_rand_xyz(cell):
 
     return np.array([tmp_x, tmp_y, tmp_z])
 
-#funkcja zwracajaca pozycje obrazow atomu
 def get_image_positions(cell, atom):
+    """
+        Returns the positions of atomic images based on the size of the cell.
+
+        Args:
+            cell (ase.Cell): The cell object.
+            atom (ase.Atom): The atom object.
+
+        Returns:
+            np.array: The positions of atom images based on the size of the cell.
+    """
     array = cell.cellpar()
-    a = array[0]  # wymiar w kierunku osi x
+    a = array[0]  # Dimension in the x-axis direction
     b = array[1]
-    b_y = b * np.sqrt(3) / 2  # skladowa wektora b w kierunku y
-    b_x = b / 2  # skladowa wektora b w kierunku x
+    b_y = b * np.sqrt(3) / 2  # Component b in the y direction
+    b_x = b / 2  # Component b in the x direction
 
     tmp_image_positions = [atom.position,
                            atom.position + np.array([a, 0., 0.]),

@@ -1,4 +1,17 @@
+"""
+The module contains the function 'load_config' which loads the parameters from input file.
+"""
+
 def load_config(filename):
+    """
+    Loads the parameters from input file.
+
+    Args:
+        filename (str): Name of the input file.
+
+    Returns:
+        dict: The dictionary containing the loaded parameters.
+    """
     config = {}
     with open(filename, 'r') as file:
         for line in file:

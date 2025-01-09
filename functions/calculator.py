@@ -1,11 +1,20 @@
-#calculator.py
-#funkcja tworzaca kalkulator Siesta o zadanych parametrach
+"""
+The module contains a function 'get_calc' that creates a calculator SIESTA with given parameters
+"""
 
 from ase.calculators.siesta import Siesta
 from ase.units import Ry
 
-
 def get_calc(label):
+    """
+    Returns the calculator object for the given label.
+
+    Args:
+        label (str): The label to identify output files.
+
+    Returns:
+        ase.Calculator: The calculator object with given parameters.
+    """
     tmp_calc = Siesta(label=f'{label}',
                   xc='PBE',
                   basis_set='SZP',

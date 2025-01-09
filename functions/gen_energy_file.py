@@ -1,12 +1,24 @@
-#gen_energy_file.py
-#funkcja zapisujaca do pliku .txt energie struktur w podanej populacji, a także sume energii, wartosc srednia i minimalna
-#gen_energy_file(plik/obiekt_z_populacja, nazwa_pliku_wyjsciowego)
+"""
+The module contains the function 'gen_energy_file', which generates a file containing the energy values
+of structures in the new population.
+"""
 
 import numpy as np
 from functions.sort_population import sort_population
 
-
 def gen_energy_file(population, out_filename):
+    """
+    Generates a file containing the energy values of structures in the new population,
+    sorted from lowest to highest energy. The file also includes the total sum, average,
+    and the lowest energy value at the end.
+
+    Args:
+        population (ase.io.Trajectory): A Trajectory object with the population.
+        out_filename (str): The name of the output file.
+
+    Returns:
+        None: The function does not return a value.
+    """
     sorted_population = sort_population(population)
     energies = []
     for i, structure in enumerate(sorted_population):

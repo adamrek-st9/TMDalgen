@@ -1,5 +1,5 @@
 """
-The module contains a function 'prep_generation' that prepare a single generation
+The module contains a function 'continue_generation' that allows you to continue unfinished calculations.
 """
 
 import os, random
@@ -14,20 +14,16 @@ from functions.mutation import mutation
 from functions.crossover import crossover
 from functions.gen_energy_file import gen_energy_file
 
-def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
-                    struct_filename, size, n_atoms, n_change, atom_symbol,
-                    calc, mag_moment, label, new_pop_name):
+def continue_generation(previous_pop_filename, pop_size, n_best, n_child, n_mut,
+                        struct_filename, size, n_atoms, n_change, atom_symbol,
+                        calc, mag_moment, label, continue_pop_label):
     """
-    Prepares a new generation based on the previous population and the given parameters.
-    As a result of the function's execution, a folder named new_pop_name is created, containing the output of the
-    calculations, including the file new_pop_name.traj, which stores the atomic structures of the new generation.
-    Outside the folder, the following files are created:
-    sorted_new_pop_name.traj - stores the sorted atomic structures.
-    energy_new_pop_name.txt - contains the energy values of the structures.
-    Here, new_pop_name is one of the function's arguments and determines the naming convention for the generated files.
+    Continues computing the unfinished generation, starting from the last fully computed structure.
+    As a result of the function's execution, calculations continue in the folder continue_pop_label,
+    which is provided as an argument to the function.
 
     Args:
-        pop_filename (str): Name of the file containing the previous population.
+        previous_pop_filename (str): Name of the file containing the previous population.
         pop_size (int): Size of the population.
         n_best (int): Number of the best individuals from the previous generation that will go to the new generation.
         n_child (int): Number of new individuals created through crossover.
@@ -40,30 +36,41 @@ def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
         calc (ase.Calculator): Calculator object.
         mag_moment (float): Initial magnetic moment assigned to atoms between layers.
         label (str): Label assigned to the calculator files (e.g., MoS2).
-        new_pop_name (str): Label of the new population.
+        continue_pop_label (str): Label of the unfinished population.
 
-    Returns:
+     Returns:
         None: The function does not return a value.
     """
+
     # Loading the initial population from the .traj file
-    previous_pop = sort_population(Trajectory(pop_filename, 'r'))
-    # Better adapted part of the previous population
+    previous_pop = sort_population(Trajectory(previous_pop_filename, 'r'))
+    #  Better adapted part of the previous population
     better_part = previous_pop[:ceil(pop_size/2)]
 
-    folder_path = Path(f'{new_pop_name}')
+    folder_path = Path(f'{continue_pop_label}')
     folder_path.mkdir(parents=True, exist_ok=True)
     original_directory = os.getcwd()
     os.chdir(folder_path)
 
+    # Loading structures from the unfinished generation
+    continue_pop = Trajectory(f'{continue_pop_label}.traj', 'r')
+    not_ended_pop = []
+    for struct in continue_pop:
+        not_ended_pop.append(struct)
+
     # Creating .traj file for new population
-    new_pop = Trajectory(f'{new_pop_name}.traj', 'w')
+    new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
+    # Adding structures from the unfinished generation
+    for struct in not_ended_pop:
+        new_pop.write(struct)
 
     # Adding the best individuals from the previous population directly to the new generation
-    for i in range(n_best):
-        new_pop.write(better_part[i])
+    if len(new_pop) == 0:
+        for i in range(n_best):
+            new_pop.write(better_part[i])
 
     # Creating new individuals through crossover
-    child_counter = 0
+    child_counter = len(new_pop) - n_best
     while len(new_pop) < n_best + n_child:
         child_counter += 1
         tmp_folder_path = Path(f'child{child_counter}')
@@ -82,17 +89,18 @@ def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
             io.write(f'relaxed_child{child_counter}.xyz', relaxed_child)
             new_pop.write(relaxed_child)
             print(f'Successfully relaxed child{child_counter}.')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Successfully relaxed child{child_counter}.\n')
         except Exception as e:
             print(f'Failed to relax child{child_counter}. Error: {e}')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Failed to relax child{child_counter}. Error: {e}\n')
+
 
         os.chdir(original_directory / folder_path)
 
     # Creating new individuals through mutation
-    mut_counter = 0
+    mut_counter = len(new_pop) - n_best - n_child
     while len(new_pop) < n_best + n_child + n_mut:
         mut_counter += 1
         tmp_folder_path = Path(f'mut{mut_counter}')
@@ -110,17 +118,17 @@ def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
             io.write(f'relaxed_mut{mut_counter}.xyz', relaxed_mut_struct)
             new_pop.write(relaxed_mut_struct)
             print(f'Successfully relaxed mut{mut_counter}.')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Successfully relaxed mut{mut_counter}.\n')
         except Exception as e:
             print(f'Failed to relax mut{mut_counter}. Error: {e}')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Failed to relax mut{mut_counter}. Error: {e}\n')
 
         os.chdir(original_directory / folder_path)
 
     # Creating the remaining individuals by drawing new structures
-    candidates_counter = 0
+    candidates_counter = len(new_pop) - n_best - n_child - n_mut
     while len(new_pop) < pop_size:
         candidates_counter += 1
         tmp_struct = gen_rand_struct(f'{original_directory}/{struct_filename}', size, atom_symbol, n_atoms)
@@ -138,26 +146,26 @@ def prep_generation(pop_filename, pop_size, n_best, n_child, n_mut,
             io.write(f'relaxed_cand{candidates_counter}.xyz', relaxed_struct)
             new_pop.write(relaxed_struct)
             print(f'Successfully relaxed cand{candidates_counter}.')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Successfully relaxed cand{candidates_counter}.\n')
         except Exception as e:
             print(f'Failed to relax cand{candidates_counter}. Error: {e}')
-            with open(f'../log_{new_pop_name}.txt', 'a') as f:
+            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
                 f.write(f'Failed to relax cand{candidates_counter}. Error: {e}\n')
 
         os.chdir(original_directory / folder_path)
 
-    tmp_pop = sort_population(Trajectory(f'{new_pop_name}.traj', 'r'))
+    tmp_pop = sort_population(Trajectory(f'{continue_pop_label}.traj', 'r'))
     # Saving the energy of structures in the new population to a file
-    gen_energy_file(tmp_pop, f'../energy_{new_pop_name}')
+    gen_energy_file(tmp_pop, f'../energy_{continue_pop_label}')
 
     os.chdir(original_directory)
 
     # Saving the new population to the .traj file in order from the lowest to the highest energy
-    out_pop = Trajectory(f'sorted_{new_pop_name}.traj', 'w')
+    out_pop = Trajectory(f'sorted_{continue_pop_label}.traj', 'w')
     for structure in tmp_pop:
         out_pop.write(structure)
 
-    print(f'The {new_pop_name} is complete!')
-    with open(f'{folder_path}/log_{new_pop_name}.txt', 'a') as f:
-        f.write(f'The {new_pop_name} is complete!\n')
+    print(f'The {continue_pop_label} is complete!')
+    with open(f'{folder_path}/log_{continue_pop_label}.txt', 'a') as f:
+        f.write(f'The {continue_pop_label} is complete!\n')
