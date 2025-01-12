@@ -1,5 +1,5 @@
 """
-The module contains a function 'mutation' that performs mutation operation
+The module contains a function 'mutation' that performs mutation operation.
 """
 
 from ase import Atoms, Atom

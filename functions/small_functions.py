@@ -1,6 +1,6 @@
 """
-The module contains a function 'get_r', 'calc_distance', 'second_part', 'get_rand_xyz' i 'get_image_positions' -
-smaller functions used in other modules.
+The module contains a function 'get_r', 'calc_distance', 'second_part', 'get_rand_xyz' and 'get_image_positions' -
+small functions used in other modules.
 """
 
 import numpy as np

@@ -1,5 +1,5 @@
 """
-The module contains a function 'crossover' that performs crossover operation
+The module contains a function 'crossover' that performs crossover operation.
 """
 
 from ase import Atoms

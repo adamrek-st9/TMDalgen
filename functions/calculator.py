@@ -1,5 +1,5 @@
 """
-The module contains a function 'get_calc' that creates a calculator SIESTA with given parameters
+The module contains a function 'get_calc' that creates a calculator SIESTA with given parameters.
 """
 
 from ase.calculators.siesta import Siesta

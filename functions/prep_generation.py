@@ -1,5 +1,5 @@
 """
-The module contains a function 'prep_generation' that prepare a single generation
+The module contains a function 'prep_generation' that prepare a single generation.
 """
 
 import os, random
