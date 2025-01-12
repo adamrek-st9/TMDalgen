@@ -1,5 +1,0 @@
-positions_filename = positions_1x1.xyz  # Name of the file with atoms positions
-struct_filename = MoS2.xyz              # Name of the file with dichalcogenide structure
-size = 4x4                              # Size of the structure (e.g., 4x4)
-n_atoms = 4                             # Number of atoms between layers
-draw_range = 20000                      # Number of draws
