@@ -8,5 +8,5 @@ size = 4x4                      # (str) Size of the structures in the population
 n_atoms = 4                     # (int) Number of atoms between layers.
 n_change = 2                    # (int) Number of atoms exchanged between structures during crossover.
 atom_symbol = Mo                # (str) Chemical symbol of atoms between the layers.
-mag_moment = 6.0                # (float) Initial magnetic moment assigned to atoms between layers.
+mag_moment = 1.0                # (float) Initial magnetic moment assigned to atoms between layers.
 label = MoS2                    # (str) Label assigned to the calculator files (e.g., MoS2).
