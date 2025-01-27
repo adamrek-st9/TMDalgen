@@ -52,7 +52,6 @@ Powyżej zostały przedstawione przykładowe parametry algorytmu do obliczeń dw
 Po wykonaniu powyższych kroków można uruchomić progam komendą (znajdując się w katalogu projektu TMDalgen): \
 • python3 main.py
 
-
 W wyniku działania programu zostaną utworzone katalogi pop_ dla każdego wygenerowanego pokolenia (np. pop0 to populacja początkowa) zawierające pliki wyjściowe kalkulatora każdej analizowej struktury w oddzielnym folderze (cand_ - losowe struktury, child_ - struktury powstałe w wyniku krzyżowania, mut_ - struktury powstałe w wyniku mutacji). W głównym folderze projektu zostaną także zapisane pliki z wygnerowanymi strukturami (sorted_pop_.traj) oraz pliki zawierające energie struktur (energy_pop_.txt) dla każdego pokolenia.  
 
 ## Struktura projektu
