@@ -53,20 +53,30 @@ def continue_generation(previous_pop_filename, pop_size, n_best, n_child, n_mut,
         original_directory = os.getcwd()
         os.chdir(folder_path)
 
-        # Loading structures from the unfinished generation
-        continue_pop = Trajectory(f'{continue_pop_label}.traj', 'r')
-        not_ended_pop = []
-        for struct in continue_pop:
-            not_ended_pop.append(struct)
+        try:
+            # Loading structures from the unfinished generation
+            continue_pop = Trajectory(f'{continue_pop_label}.traj', 'r')
+            not_ended_pop = []
+            for struct in continue_pop:
+                not_ended_pop.append(struct)
 
-        # Creating .traj file for new population
-        new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
-        # Adding structures from the unfinished generation
-        for struct in not_ended_pop:
-            new_pop.write(struct)
+            # Creating .traj file for new population
+            new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
 
-        # Adding the best individuals from the previous population directly to the new generation
-        if len(new_pop) == 0:
+            # Adding structures from the unfinished generation or if the unfinished generation is empty
+            # adding the best individuals from the previous population directly to the new generation
+            if len(not_ended_pop) > 0:
+                for struct in not_ended_pop:
+                    new_pop.write(struct)
+            else:
+                for i in range(n_best):
+                    new_pop.write(better_part[i])
+
+        # If there is no continue_pop .traj file
+        except FileNotFoundError:
+            # Creating .traj file for new population
+            new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
+            # Adding the best individuals from the previous population directly to the new generation
             for i in range(n_best):
                 new_pop.write(better_part[i])
 
