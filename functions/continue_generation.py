@@ -2,7 +2,7 @@
 The module contains a function 'continue_generation' that allows you to continue unfinished calculations.
 """
 
-import os, random
+import os, sys, random
 from pathlib import Path
 import numpy as np
 from ase import io
@@ -42,130 +42,135 @@ def continue_generation(previous_pop_filename, pop_size, n_best, n_child, n_mut,
         None: The function does not return a value.
     """
 
-    # Loading the initial population from the .traj file
-    previous_pop = sort_population(Trajectory(previous_pop_filename, 'r'))
-    #  Better adapted part of the previous population
-    better_part = previous_pop[:ceil(pop_size/2)]
+    try:
+        # Loading the initial population from the .traj file
+        previous_pop = sort_population(Trajectory(previous_pop_filename, 'r'))
+        # Better adapted part of the previous population
+        better_part = previous_pop[:ceil(pop_size / 2)]
 
-    folder_path = Path(f'{continue_pop_label}')
-    folder_path.mkdir(parents=True, exist_ok=True)
-    original_directory = os.getcwd()
-    os.chdir(folder_path)
+        folder_path = Path(f'{continue_pop_label}')
+        folder_path.mkdir(parents=True, exist_ok=True)
+        original_directory = os.getcwd()
+        os.chdir(folder_path)
 
-    # Loading structures from the unfinished generation
-    continue_pop = Trajectory(f'{continue_pop_label}.traj', 'r')
-    not_ended_pop = []
-    for struct in continue_pop:
-        not_ended_pop.append(struct)
+        # Loading structures from the unfinished generation
+        continue_pop = Trajectory(f'{continue_pop_label}.traj', 'r')
+        not_ended_pop = []
+        for struct in continue_pop:
+            not_ended_pop.append(struct)
 
-    # Creating .traj file for new population
-    new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
-    # Adding structures from the unfinished generation
-    for struct in not_ended_pop:
-        new_pop.write(struct)
+        # Creating .traj file for new population
+        new_pop = Trajectory(f'{continue_pop_label}.traj', 'w')
+        # Adding structures from the unfinished generation
+        for struct in not_ended_pop:
+            new_pop.write(struct)
 
-    # Adding the best individuals from the previous population directly to the new generation
-    if len(new_pop) == 0:
-        for i in range(n_best):
-            new_pop.write(better_part[i])
+        # Adding the best individuals from the previous population directly to the new generation
+        if len(new_pop) == 0:
+            for i in range(n_best):
+                new_pop.write(better_part[i])
 
-    # Creating new individuals through crossover
-    child_counter = len(new_pop) - n_best
-    while len(new_pop) < n_best + n_child:
-        child_counter += 1
-        tmp_folder_path = Path(f'child{child_counter}')
-        tmp_folder_path.mkdir(parents=True, exist_ok=True)
-        os.chdir(tmp_folder_path)
-        parent1, parent2 = random.sample(better_part, 2)
-        child = crossover(parent1, parent2, n_change, f'{original_directory}/{struct_filename}', size)
-        moments = [0] * (len(child) - n_atoms) + [mag_moment] * n_atoms
-        child.set_initial_magnetic_moments(moments)
-        try:
-            child.calc = calc
-            pot_energy = child.get_potential_energy()
-            relaxed_child = io.read(f'{label}.XV')
-            relaxed_child.pbc = [True, True, False]
-            relaxed_child.info['pot_energy'] = np.round(pot_energy, 4)
-            io.write(f'relaxed_child{child_counter}.xyz', relaxed_child)
-            new_pop.write(relaxed_child)
-            print(f'Successfully relaxed child{child_counter}.')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Successfully relaxed child{child_counter}.\n')
-        except Exception as e:
-            print(f'Failed to relax child{child_counter}. Error: {e}')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Failed to relax child{child_counter}. Error: {e}\n')
+        # Creating new individuals through crossover
+        child_counter = len(new_pop) - n_best
+        while len(new_pop) < n_best + n_child:
+            child_counter += 1
+            tmp_folder_path = Path(f'child{child_counter}')
+            tmp_folder_path.mkdir(parents=True, exist_ok=True)
+            os.chdir(tmp_folder_path)
+            parent1, parent2 = random.sample(better_part, 2)
+            child = crossover(parent1, parent2, n_change, f'{original_directory}/{struct_filename}', size)
+            moments = [0] * (len(child) - n_atoms) + [mag_moment] * n_atoms
+            child.set_initial_magnetic_moments(moments)
+            try:
+                child.calc = calc
+                pot_energy = child.get_potential_energy()
+                relaxed_child = io.read(f'{label}.XV')
+                relaxed_child.pbc = [True, True, False]
+                relaxed_child.info['pot_energy'] = np.round(pot_energy, 4)
+                io.write(f'relaxed_child{child_counter}.xyz', relaxed_child)
+                new_pop.write(relaxed_child)
+                print(f'Successfully relaxed child{child_counter}.')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Successfully relaxed child{child_counter}.\n')
+            except Exception as e:
+                print(f'Failed to relax child{child_counter}. Error: {e}')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Failed to relax child{child_counter}. Error: {e}\n')
 
 
-        os.chdir(original_directory / folder_path)
+            os.chdir(original_directory / folder_path)
 
-    # Creating new individuals through mutation
-    mut_counter = len(new_pop) - n_best - n_child
-    while len(new_pop) < n_best + n_child + n_mut:
-        mut_counter += 1
-        tmp_folder_path = Path(f'mut{mut_counter}')
-        tmp_folder_path.mkdir(parents=True, exist_ok=True)
-        os.chdir(tmp_folder_path)
-        mut_struct = mutation(random.choice(better_part))
-        moments = [0] * (len(mut_struct) - n_atoms) + [mag_moment] * n_atoms
-        mut_struct.set_initial_magnetic_moments(moments)
-        try:
-            mut_struct.calc = calc
-            pot_energy = mut_struct.get_potential_energy()
-            relaxed_mut_struct = io.read(f'{label}.XV')
-            relaxed_mut_struct.pbc = [True, True, False]
-            relaxed_mut_struct.info['pot_energy'] = np.round(pot_energy, 4)
-            io.write(f'relaxed_mut{mut_counter}.xyz', relaxed_mut_struct)
-            new_pop.write(relaxed_mut_struct)
-            print(f'Successfully relaxed mut{mut_counter}.')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Successfully relaxed mut{mut_counter}.\n')
-        except Exception as e:
-            print(f'Failed to relax mut{mut_counter}. Error: {e}')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Failed to relax mut{mut_counter}. Error: {e}\n')
+        # Creating new individuals through mutation
+        mut_counter = len(new_pop) - n_best - n_child
+        while len(new_pop) < n_best + n_child + n_mut:
+            mut_counter += 1
+            tmp_folder_path = Path(f'mut{mut_counter}')
+            tmp_folder_path.mkdir(parents=True, exist_ok=True)
+            os.chdir(tmp_folder_path)
+            mut_struct = mutation(random.choice(better_part))
+            moments = [0] * (len(mut_struct) - n_atoms) + [mag_moment] * n_atoms
+            mut_struct.set_initial_magnetic_moments(moments)
+            try:
+                mut_struct.calc = calc
+                pot_energy = mut_struct.get_potential_energy()
+                relaxed_mut_struct = io.read(f'{label}.XV')
+                relaxed_mut_struct.pbc = [True, True, False]
+                relaxed_mut_struct.info['pot_energy'] = np.round(pot_energy, 4)
+                io.write(f'relaxed_mut{mut_counter}.xyz', relaxed_mut_struct)
+                new_pop.write(relaxed_mut_struct)
+                print(f'Successfully relaxed mut{mut_counter}.')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Successfully relaxed mut{mut_counter}.\n')
+            except Exception as e:
+                print(f'Failed to relax mut{mut_counter}. Error: {e}')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Failed to relax mut{mut_counter}. Error: {e}\n')
 
-        os.chdir(original_directory / folder_path)
+            os.chdir(original_directory / folder_path)
 
-    # Creating the remaining individuals by drawing new structures
-    candidates_counter = len(new_pop) - n_best - n_child - n_mut
-    while len(new_pop) < pop_size:
-        candidates_counter += 1
-        tmp_struct = gen_rand_struct(f'{original_directory}/{struct_filename}', size, atom_symbol, n_atoms)
-        moments = [0] * (len(tmp_struct) - n_atoms) + [mag_moment] * n_atoms
-        tmp_struct.set_initial_magnetic_moments(moments)
-        tmp_folder_path = Path(f'cand{candidates_counter}')
-        tmp_folder_path.mkdir(parents=True, exist_ok=True)
-        os.chdir(tmp_folder_path)
-        try:
-            tmp_struct.calc = calc
-            pot_energy = tmp_struct.get_potential_energy()
-            relaxed_struct = io.read(f'{label}.XV')
-            relaxed_struct.pbc = [True, True, False]
-            relaxed_struct.info['pot_energy'] = np.round(pot_energy, 4)
-            io.write(f'relaxed_cand{candidates_counter}.xyz', relaxed_struct)
-            new_pop.write(relaxed_struct)
-            print(f'Successfully relaxed cand{candidates_counter}.')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Successfully relaxed cand{candidates_counter}.\n')
-        except Exception as e:
-            print(f'Failed to relax cand{candidates_counter}. Error: {e}')
-            with open(f'../log_{continue_pop_label}.txt', 'a') as f:
-                f.write(f'Failed to relax cand{candidates_counter}. Error: {e}\n')
+        # Creating the remaining individuals by drawing new structures
+        candidates_counter = len(new_pop) - n_best - n_child - n_mut
+        while len(new_pop) < pop_size:
+            candidates_counter += 1
+            tmp_struct = gen_rand_struct(f'{original_directory}/{struct_filename}', size, atom_symbol, n_atoms)
+            moments = [0] * (len(tmp_struct) - n_atoms) + [mag_moment] * n_atoms
+            tmp_struct.set_initial_magnetic_moments(moments)
+            tmp_folder_path = Path(f'cand{candidates_counter}')
+            tmp_folder_path.mkdir(parents=True, exist_ok=True)
+            os.chdir(tmp_folder_path)
+            try:
+                tmp_struct.calc = calc
+                pot_energy = tmp_struct.get_potential_energy()
+                relaxed_struct = io.read(f'{label}.XV')
+                relaxed_struct.pbc = [True, True, False]
+                relaxed_struct.info['pot_energy'] = np.round(pot_energy, 4)
+                io.write(f'relaxed_cand{candidates_counter}.xyz', relaxed_struct)
+                new_pop.write(relaxed_struct)
+                print(f'Successfully relaxed cand{candidates_counter}.')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Successfully relaxed cand{candidates_counter}.\n')
+            except Exception as e:
+                print(f'Failed to relax cand{candidates_counter}. Error: {e}')
+                with open(f'../log_{continue_pop_label}.txt', 'a') as f:
+                    f.write(f'Failed to relax cand{candidates_counter}. Error: {e}\n')
 
-        os.chdir(original_directory / folder_path)
+            os.chdir(original_directory / folder_path)
 
-    tmp_pop = sort_population(Trajectory(f'{continue_pop_label}.traj', 'r'))
-    # Saving the energy of structures in the new population to a file
-    gen_energy_file(tmp_pop, f'../energy_{continue_pop_label}')
+        tmp_pop = sort_population(Trajectory(f'{continue_pop_label}.traj', 'r'))
+        # Saving the energy of structures in the new population to a file
+        gen_energy_file(tmp_pop, f'../energy_{continue_pop_label}')
 
-    os.chdir(original_directory)
+        os.chdir(original_directory)
 
-    # Saving the new population to the .traj file in order from the lowest to the highest energy
-    out_pop = Trajectory(f'sorted_{continue_pop_label}.traj', 'w')
-    for structure in tmp_pop:
-        out_pop.write(structure)
+        # Saving the new population to the .traj file in order from the lowest to the highest energy
+        out_pop = Trajectory(f'sorted_{continue_pop_label}.traj', 'w')
+        for structure in tmp_pop:
+            out_pop.write(structure)
 
-    print(f'The {continue_pop_label} is complete!')
-    with open(f'{folder_path}/log_{continue_pop_label}.txt', 'a') as f:
-        f.write(f'The {continue_pop_label} is complete!\n')
+        print(f'The {continue_pop_label} is complete!')
+        with open(f'{folder_path}/log_{continue_pop_label}.txt', 'a') as f:
+            f.write(f'The {continue_pop_label} is complete!\n')
+
+    except Exception as er:
+        print(er)
+        sys.exit(1)
